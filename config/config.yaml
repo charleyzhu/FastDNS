@@ -109,6 +109,12 @@ rules-subscribe:
       #   type: dnsmasq
       #   server: isp
 
+  - name: netflix
+    files:
+      - url: https://cdn.jsdelivr.net/gh/lhie1/Rules@master/Clash/Provider/Media/Netflix.yaml
+        type: clash
+        server: clash
+
 rules-list:
   - name: default
     rules:

@@ -391,6 +391,13 @@ func parseSubscribeFile(chanRulesGroup chan constant.RulesGroup, subscribeConfig
 				}
 				go parseDnsmasqRules(subscribeFile.Url, remoteServer, ruleChan, ruleListWaitGroup)
 
+			} else if subscribeFile.Type == "clash" {
+				remoteServer, existRemoteServer := remoteDnsServers[subscribeFile.Server]
+				if !existRemoteServer {
+					log.Logger.Errorf("rules-subscribe [%s] [%d]: exist RemoteServer %s", subscribeConfig.Name, fileIdx, subscribeFile.Server)
+					break
+				}
+				go parseClashRules(subscribeFile.Url, remoteServer, ruleChan, ruleListWaitGroup)
 			} else {
 				go parseSubscribeRules(subscribeFile.Url, remoteDnsServers, ruleChan, ruleListWaitGroup)
 			}
@@ -409,6 +416,42 @@ func parseSubscribeFile(chanRulesGroup chan constant.RulesGroup, subscribeConfig
 	rulesGroupWaitGroup.Done()
 	chanRulesGroup <- rules.NewRuleList(lowerName, ruleList)
 
+}
+
+func parseClashRules(url string, remoteDnsServer constant.RemoteDnsServer, ruleChan chan []constant.Rule, ruleListWaitGroup *sync.WaitGroup) {
+	log.Logger.Infof("start parse clash rules %s", url)
+	var ruleList []constant.Rule
+	rulesString, err := subscribe.Subscribe(url)
+	if err != nil {
+		log.Logger.Error(err)
+		ruleChan <- ruleList
+		ruleListWaitGroup.Done()
+		return
+	}
+
+	clashRuleFile := &ClashRule{}
+	err = yaml.Unmarshal([]byte(rulesString), clashRuleFile)
+	if err != nil {
+		log.Logger.Error(err)
+		ruleChan <- ruleList
+		ruleListWaitGroup.Done()
+		return
+	}
+
+	for _, ruleLine := range clashRuleFile.Payload {
+		rule, err := rules.ParseClashRule(ruleLine, remoteDnsServer)
+		if err != nil {
+			log.Logger.Warn(err)
+			continue
+		}
+		ruleList = append(ruleList, rule)
+	}
+	if len(ruleList) > 0 {
+		savePath := subscribe.GetUrlCachePath(url)
+		subscribe.SaveCacheFile(savePath, rulesString)
+	}
+	ruleChan <- ruleList
+	ruleListWaitGroup.Done()
 }
 
 func parseDnsmasqRules(url string, remoteDnsServer constant.RemoteDnsServer, ruleChan chan []constant.Rule, ruleListWaitGroup *sync.WaitGroup) {

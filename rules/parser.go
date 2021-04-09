@@ -69,6 +69,41 @@ func ParseRule(ruleLine string, remoteDnsServers map[string]constant.RemoteDnsSe
 	return parsed, parseErr
 }
 
+func ParseClashRule(ruleLine string, remoteDnsServer constant.RemoteDnsServer) (constant.Rule, error) {
+	var (
+		parseErr error
+		parsed   constant.Rule
+	)
+
+	ruleArray := strings.Split(ruleLine, ",")
+	if len(ruleArray) != 2 {
+		return nil, fmt.Errorf("ParseRule: %s error", ruleLine)
+	}
+	ruleType := ruleArray[0]
+	payload := ruleArray[1]
+
+	switch ruleType {
+	case "DOMAIN-SUFFIX":
+		parsed = NewDomainSuffix(payload, remoteDnsServer)
+
+	case "DOMAIN-KEYWORD":
+		parsed = NewDomainKeyword(payload, remoteDnsServer)
+
+	case "DOMAIN":
+		parsed = NewDomain(payload, remoteDnsServer)
+
+	case "ADDRESS-SUFFIX":
+		parsed = NewAddressSuffix(payload, remoteDnsServer)
+	case "ADDRESS-KEYWORD":
+		parsed = NewAddressKeyword(payload, remoteDnsServer)
+	case "ADDRESS":
+		parsed = NewAddress(payload, remoteDnsServer)
+	default:
+		parseErr = fmt.Errorf("unsupported rule type %s", ruleType)
+	}
+	return parsed, parseErr
+}
+
 func ParseDnsmasqRule(ruleLine string, remoteDnsServer constant.RemoteDnsServer) (constant.Rule, error) {
 	ruleLineArray := strings.Split(ruleLine, "/")
 	if len(ruleLineArray) != 3 {
