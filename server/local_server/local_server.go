@@ -81,7 +81,6 @@ func (ls *LocalServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		if err != nil {
 			emptyMsg := dns.Msg{}
 			emptyMsg.SetReply(r)
-			ls.CheckTTL(msg)
 			w.WriteMsg(&emptyMsg)
 			log.Logger.Error(err)
 			return

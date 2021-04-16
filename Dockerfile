@@ -1,10 +1,11 @@
-FROM golang:1.15.6 AS builder
+FROM golang:1.16.3-alpine AS builder
 WORKDIR /go/src/github.com/charleyzhu/FastDNS/
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build
+RUN apk add --no-cache gcc build-base
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build --ldflags "-extldflags -static"
 
 
-FROM golang:1.15.6
+FROM golang:1.16.3
 # RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
 WORKDIR /FastDNS
 
